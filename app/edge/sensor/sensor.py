@@ -1,9 +1,12 @@
-class Sensor:
-  def __init__(self):
-    # initialize data range
-    # how to generate data
-    pass
+from typing import List
+from random import random
 
-  def read(self):
-    # random data
-    return 0
+
+class Sensor:
+    def __init__(self, range: List[int]):
+        # initialize data range
+        self.range = range
+
+    def read(self) -> int:
+        # random data in range
+        return random() * (self.range[1] - self.range[0]) + self.range[0]
