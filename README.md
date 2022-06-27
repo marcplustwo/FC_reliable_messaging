@@ -38,7 +38,7 @@ REQ
 - count incoming / outgoing cars
 - send to cloud
   - current occupancy/availability
-  - when car left: send parking length to cloud
+  - when car left: send parking length to cloud (for billing)
 
 ## cloud
 - billing (send the bill to the customer) (it wouldn't actually do anything in our implementation)
@@ -59,14 +59,17 @@ REQ
   - define Message types
     - client -> server
       - A1 DATA
-      - B1 DATA_REQUEST (here: price request)
+      - B1 DATA_REQUEST (here: OCCUPANCY request) (every 30 seconds)
     - server -> client
       - A2 ACK
       - B2 ACK (with data)
   - define msg content types
     - A1
-      - license plate
-      - time stamp
-      - direction (in/out)
+      - TYPE 1
+        - current occupancy of this parking garage
+      - TYPE 2
+        - car just left (for billing purposes)
     - B1
-      - 
+      - request availability for all parking garages (nearby)
+    - B2
+      - availability in each parking garage

@@ -2,6 +2,15 @@ import json
 from random import random
 import zmq
 
+# dictionary of parking garages
+# with latest information on occupancy
+
+
+def bill_customer(license_plate: str, parking_duration_minutes: int):
+    # "billing service"
+    # send the customer an imaginary bill
+    pass
+
 
 def run_server():
     # init message receiver

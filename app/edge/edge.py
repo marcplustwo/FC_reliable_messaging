@@ -1,5 +1,5 @@
 from time import sleep
-from edge.sensor.sensor import Sensor
+from app.edge.simulated_sensor.parking_garage import ParkingGarage, Sensor
 from common.message import Message, MessageType
 import zmq
 import threading
@@ -21,19 +21,10 @@ socket.connect("tcp://localhost:5555")
 sensor = Sensor([18, 24])
 
 
-def read_sensor(sensor: Sensor, interval_seconds: int = 5):
-    # loop:
-    #   read sensors
-    #   send data (put into message queue)
-    while True:
-        reading = sensor.read()
+def simulate_parking_garage():
+    parking_garage = ParkingGarage(id = 1)
 
-        # make message
-        msg = Message(payload=str(reading), type=MessageType.READING)
-
-        # add to queue
-        msg_queue[msg.id] = msg
-        sleep(interval_seconds)
+    parking_garage.start()
 
 
 def send(msg: Message):
@@ -50,13 +41,16 @@ def send(msg: Message):
 
 
 def run_edge():
-    sensor_thread = threading.Thread(target=read_sensor, args=[sensor, 1])
+    sensor_thread = threading.Thread(target=simulate_parking_garage, args=[sensor, 1])
     sensor_thread.start()
 
     while True:
-        # at a regular interval REQUEST price info from server
-        # hey, it's been 5 seconds, I need a new price update
+        # at a regular interval REQUEST occupancy info from server
+        # add to message queue: REQUEST msg (A1 Type 1)
 
+        # every 30 seconds:
+        # call parking_garage.cars_recently_left() and make one message (for billing purposes)
+        # add to message queue: CAR BILLING LIST (A1 Type 2)
 
         msg_keys = list(msg_queue.keys())
         if len(msg_keys) == 0:
