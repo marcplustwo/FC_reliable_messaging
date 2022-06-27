@@ -29,3 +29,9 @@ We implement a reliable delivery mechanism.
 (draw this type of diagram)
 https://taotetek.wordpress.com/2011/02/02/python-multiprocessing-with-zeromq/
 
+### MSG Types
+READING
+ACK
+REQ
+
+

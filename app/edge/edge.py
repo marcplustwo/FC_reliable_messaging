@@ -1,33 +1,8 @@
-from concurrent.futures import thread
-from enum import Enum
 from time import sleep
-from sensor.sensor import Sensor
+from edge.sensor.sensor import Sensor
+from common.message import Message, MessageType
 import zmq
-import queue
 import threading
-import json
-from ulid import ULID
-
-
-class MessageType(Enum):
-    READING = 0
-    ACK = 2
-
-
-class Message:
-    def __init__(self, payload: str, type: MessageType):
-        self.id = str(ULID())
-
-        self.payload = payload
-        self.type = type
-
-    def construct_msg(self):
-        # use json for prototype, ideally switch to protobuf for performance reasons
-        # however, this is python so it doesn't matter here
-        return json.dumps({
-            "payload": self.payload,
-            "id": self.id,
-        }, ensure_ascii=True).encode("ascii")
 
 
 msg_queue = dict()
@@ -61,10 +36,6 @@ def read_sensor(sensor: Sensor, interval_seconds: int = 5):
         sleep(interval_seconds)
 
 
-sensor_thread = threading.Thread(target=read_sensor, args=[sensor, 1])
-sensor_thread.start()
-
-
 def send(msg: Message):
     global socket
     socket.send(msg.construct_msg())
@@ -78,16 +49,20 @@ def send(msg: Message):
         pass
 
 
-while True:
-    msg_keys = list(msg_queue.keys())
-    if len(msg_keys) == 0:
-        continue
+def run_edge():
+    sensor_thread = threading.Thread(target=read_sensor, args=[sensor, 1])
+    sensor_thread.start()
 
-    # send oldest message first (ULIDs) are sortable by time
-    msg_keys.sort()
-    msg = msg_queue[msg_keys[0]]
+    while True:
+        msg_keys = list(msg_queue.keys())
+        if len(msg_keys) == 0:
+            continue
 
-    print(f"sending message: {msg.id}")
-    send(msg)
+        # send oldest message first (ULIDs) are sortable by time
+        msg_keys.sort()
+        msg = msg_queue[msg_keys[0]]
 
-    print(f"remaining: {len(msg_queue)}")
+        print(f"sending message: {msg.id}")
+        send(msg)
+
+        print(f"remaining: {len(msg_queue)}")
