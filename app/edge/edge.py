@@ -54,6 +54,10 @@ def run_edge():
     sensor_thread.start()
 
     while True:
+        # at a regular interval REQUEST price info from server
+        # hey, it's been 5 seconds, I need a new price update
+
+
         msg_keys = list(msg_queue.keys())
         if len(msg_keys) == 0:
             continue

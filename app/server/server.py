@@ -21,6 +21,15 @@ def run_server():
     while True:
         msg = socket.recv()
 
+        # EASY OPTION
+        # if msg type PRICE_REQUEST
+        # -> send price data
+        # if msg type DATA/SENSOR_READIN
+        # record / send ACK
+
+        # MORE DIFFICULT OPTION
+        # regularly send out price updates
+
         if random() < 0.2:
             socket.send_string("")
             print(f"didn't ack {msg}")

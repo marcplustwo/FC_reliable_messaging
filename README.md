@@ -12,14 +12,13 @@ We implement a reliable delivery mechanism.
 ### Algorithm
 - put data in queue (at regular intervals)
   - mark as "NEW"
-- send data that is not acknowledged (take form queue)
-  - every x interval we take the y first messages from the queue and send it
+- send data that is not acknowledged
+  - every x interval we take the messages (oldest first) from the queue and send it
   - mark as "AWAITING_ACK"
 
 - server
   - receive
-  - wait for some time and collect messages
-  - send ACK with a list of IDs
+  - send ACK
 
 - client
   - wait for ACK messages
@@ -34,4 +33,40 @@ READING
 ACK
 REQ
 
+# responsibilities / use case
+## edge
+- count incoming / outgoing cars
+- send to cloud
+  - current occupancy/availability
+  - when car left: send parking length to cloud
 
+## cloud
+- billing (send the bill to the customer) (it wouldn't actually do anything in our implementation)
+  - we assume/pretend every car has an account with billing information linked
+- occupancy report (how many parking spots available throughout the city)
+
+
+# TODO
+- multiple edge instances
+  - we give parking lot id (new port)
+- adapt for use case
+  - simulate car sensor (at parking lot entrance)
+    - random: come up with algorithm that meaningfully changes occupancy -> over time there is a trend of more cars going in (so that the price would actually change)
+    - a bit later the trend would be for more cars to leave again
+  - direction in/out (ou including length of stay [for billing]) + license plate + id of parking lot
+  - remember cars that came in, so we can simulate them leaving again
+- Implement Message abstraction for server as well
+  - define Message types
+    - client -> server
+      - A1 DATA
+      - B1 DATA_REQUEST (here: price request)
+    - server -> client
+      - A2 ACK
+      - B2 ACK (with data)
+  - define msg content types
+    - A1
+      - license plate
+      - time stamp
+      - direction (in/out)
+    - B1
+      - 
