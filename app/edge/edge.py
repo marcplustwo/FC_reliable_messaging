@@ -2,7 +2,7 @@ from datetime import datetime
 from random import random
 from edge.simulated_sensor.parking_garage import ParkingGarage
 from edge.message_queue.message_queue import MessageQueue
-from common.message import Message, MessageType
+from common.message import Message, MessageType, PayloadType
 import zmq
 import threading
 
@@ -28,21 +28,28 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
             next_req = now + 3
 
             req = Message(
-                payload={'hi': 5}, type=MessageType.DATA_REQUEST, sender=garage_name)
+                payload={garage_name: 100},
+                payload_type=PayloadType.OCCUPANCY,
+                type=MessageType.REQ,
+                sender=garage_name)
             msg_queue.enqueue(req)
 
         if now > next_car:
             next_car = now + random() * 10
 
-            print("CAR")
-
-            req = Message(payload={'license': 'abc', 'direction': 'out'},
-                          type=MessageType.DATA, sender=garage_name)
+            req = Message(payload={'license_plate': 'abc', 'duration_minutes': 140},
+                          payload_type=PayloadType.CAR_BILLING,
+                          type=MessageType.REQ,
+                          sender=garage_name)
             msg_queue.enqueue(req)
 
     # parking_garage = ParkingGarage(id = 1)
     # parking_garage.start()
 
+
+def handle_resp(resp: Message):
+    if resp.payload is not None:
+        print(f"{resp.payload}")
 
 def run_edge(garage_name: str):
     msg_queue = MessageQueue()
@@ -73,6 +80,8 @@ def run_edge(garage_name: str):
         if resp is not None and resp.type == MessageType.ACK:
             print(f"recvd ack: {resp.id}")
             msg_queue.dequeue(resp.id)
+            # this would likely happen asynchronously
+            handle_resp(resp)
             print(f"remaining: {len(msg_queue)}")
         else:
             print(f"unhandled msg")
