@@ -2,6 +2,8 @@ import json
 from random import random
 import zmq
 
+from common.message import Message, MessageType
+
 # dictionary of parking garages
 # with latest information on occupancy
 
@@ -19,16 +21,10 @@ def run_server():
     # socket.setsockopt(zmq.REQ_RELAXED, 1)
     socket.bind("tcp://*:5555")
 
-    # loop:
-    #   recv data
-    #   store data
-    #
-    #   (not every iteration but regularly e.g. timer):
-    #     aggregate data and send out via message queue
-    recvd = dict()
-
     while True:
-        msg = socket.recv()
+        raw_msg = socket.recv()
+
+        msg = Message.from_bytes(raw_msg)
 
         # EASY OPTION
         # if msg type PRICE_REQUEST
@@ -36,8 +32,7 @@ def run_server():
         # if msg type DATA/SENSOR_READIN
         # record / send ACK
 
-        # MORE DIFFICULT OPTION
-        # regularly send out price updates
+        # keep a list of msg ids to not process msg twice. do ACK though
 
         if random() < 0.2:
             socket.send_string("")
@@ -47,12 +42,16 @@ def run_server():
         # if random() < 0.1:
         #     print(recvd)
 
-        print(f"ack: {msg}")
-        msg = json.loads(msg)
-        socket.send_string(f"{msg['id']}", zmq.NOBLOCK)
+
+        print(f"ack: {msg.id}")
+
+        resp = Message(type=MessageType.ACK, _id=msg.id, sender="server")
+
+        # build response
+        socket.send(resp.construct_msg(), zmq.NOBLOCK)
 
         # just check that we don't get duplicates
-        if not msg['id'] in recvd:
-            recvd[msg['id']] = 1
-        else:
-            recvd[msg['id']] += 1
+        # if not msg['id'] in recvd:
+        #     recvd[msg['id']] = 1
+        # else:
+        #     recvd[msg['id']] += 1
