@@ -1,5 +1,7 @@
 from datetime import datetime
 from common.message import Message
+from os import path, mkdir
+import shelve
 
 
 def ts():
@@ -7,26 +9,30 @@ def ts():
 
 
 class MessageQueue:
-    def __init__(self):
-        self.queue = dict()
+    def __init__(self, garage_name: str):
+        if not path.exists("_tmp"):
+            mkdir("_tmp")
+
+        self.queue = shelve.open(path.join("_tmp", garage_name))
 
     def enqueue(self, msg: Message):
         self.queue[msg.id] = {"ts": ts(),
                               "msg": msg}
 
     def dequeue(self, id: str):
-        msg = self.queue[id]
-        del self.queue[id]
-        return msg
+        return self.queue.pop(id)
 
     def retrieve(self) -> Message | None:
         keys = list(self.queue.keys())
         for key in keys:
-            entry = self.queue[key]
+            entry = self.queue.get(key)
             # only give me something that hasn't been sent in 2 seconds
             if ts() - entry["ts"] > 2:
                 entry["ts"] = ts()
                 return entry["msg"]
+
+    def sync(self):
+        self.queue.sync()
 
     def __len__(self):
         return len(self.queue)

@@ -7,15 +7,6 @@ import zmq
 import threading
 
 
-# init cloud server
-context = zmq.Context()
-
-#  Socket to talk to server
-socket = context.socket(zmq.REQ)
-socket.setsockopt(zmq.REQ_RELAXED, 1)
-socket.connect("tcp://localhost:5555")
-
-
 def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
     next_req = datetime.now().timestamp()
     next_car = datetime.now().timestamp() + 4
@@ -51,37 +42,50 @@ def handle_resp(resp: Message):
     if resp.payload is not None:
         print(f"{resp.payload}")
 
-def run_edge(garage_name: str):
-    msg_queue = MessageQueue()
 
-    sensor_thread = threading.Thread(
-        target=simulate_parking_garage, args=[msg_queue, garage_name])
-    sensor_thread.start()
+def loop(socket, msg_queue):
+    msg = msg_queue.retrieve()
+    if msg is None:
+        return
+
+    print(f"sending message: {msg.id}")
+    socket.send(msg.construct_msg())
+
+    try:
+        raw = socket.recv()
+    except zmq.Again:
+        return
+
+    resp = Message.from_bytes(raw)
+
+    if resp is not None and resp.type == MessageType.ACK:
+        print(f"recvd ack: {resp.id}")
+        msg_queue.dequeue(resp.id)
+        # this would likely happen asynchronously
+        handle_resp(resp)
+        print(f"remaining: {len(msg_queue)}")
+    else:
+        print(f"unhandled msg")
+
+
+def run_edge(garage_name: str):
+    msg_queue = MessageQueue(garage_name=garage_name)
 
     # every 30 seconds:
     # call parking_garage.cars_recently_left() and make one message (for billing purposes)
     # add to message queue: CAR BILLING LIST (A1 Type 2)
+    sensor_thread = threading.Thread(
+        target=simulate_parking_garage, args=[msg_queue, garage_name])
+    sensor_thread.start()
 
-    while True:
-        msg = msg_queue.retrieve()
-        if msg is None:
-            continue
+    # init socket
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.setsockopt(zmq.REQ_RELAXED, 1)
+    socket.connect("tcp://localhost:5555")
 
-        print(f"sending message: {msg.id}")
-        socket.send(msg.construct_msg())
-
-        try:
-            raw = socket.recv()
-        except zmq.Again:
-            continue
-
-        resp = Message.from_bytes(raw)
-
-        if resp is not None and resp.type == MessageType.ACK:
-            print(f"recvd ack: {resp.id}")
-            msg_queue.dequeue(resp.id)
-            # this would likely happen asynchronously
-            handle_resp(resp)
-            print(f"remaining: {len(msg_queue)}")
-        else:
-            print(f"unhandled msg")
+    try:
+        while True:
+            loop(socket=socket, msg_queue=msg_queue)
+    except KeyboardInterrupt:
+        msg_queue.sync()
