@@ -1,8 +1,10 @@
 from datetime import datetime
-from common.message import Message
 from os import path, mkdir
-import shelve
 
+import shelve
+import logging
+
+from common.message import Message
 
 def ts():
     return datetime.now().timestamp()
@@ -18,6 +20,7 @@ class MessageQueue:
     def enqueue(self, msg: Message):
         self.queue[msg.id] = {"ts": ts(),
                               "msg": msg}
+        logging.info(f"remaining msgs in queue: {len(self.queue)}")
 
     def dequeue(self, id: str):
         return self.queue.pop(id)

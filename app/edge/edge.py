@@ -1,25 +1,37 @@
-from datetime import datetime
+import threading
+import zmq
+import logging
+
 from random import random
-from edge.simulated_sensor.parking_garage import ParkingGarage
+from datetime import datetime
+
 from edge.message_queue.message_queue import MessageQueue
 from common.message import Message, MessageType, PayloadType
-import zmq
-import threading
 
 
 def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
     next_req = datetime.now().timestamp()
     next_car = datetime.now().timestamp() + 4
+    next_data = datetime.now().timestamp() + 4
     while True:
         # at a regular interval REQUEST occupancy info from server
         # add to message queue: REQUEST msg (A1 Type 1)
-
         now = datetime.now().timestamp()
+
+        if now > next_data:
+            next_data = now + 10
+
+            req = Message(
+                payload_type=PayloadType.OCCUPANCY_REQUEST,
+                type=MessageType.REQ,
+                sender=garage_name)
+            msg_queue.enqueue(req)
+
         if now > next_req:
             next_req = now + 3
 
             req = Message(
-                payload={garage_name: 100},
+                payload={garage_name: int(random() * 500)},
                 payload_type=PayloadType.OCCUPANCY,
                 type=MessageType.REQ,
                 sender=garage_name)
@@ -48,7 +60,7 @@ def loop(socket, msg_queue):
     if msg is None:
         return
 
-    print(f"sending message: {msg.id}")
+    logging.info(f"sending message: {msg.id}")
     socket.send(msg.construct_msg())
 
     try:
@@ -59,13 +71,12 @@ def loop(socket, msg_queue):
     resp = Message.from_bytes(raw)
 
     if resp is not None and resp.type == MessageType.ACK:
-        print(f"recvd ack: {resp.id}")
+        logging.info(f"recvd ack: {resp.id}")
         msg_queue.dequeue(resp.id)
         # this would likely happen asynchronously
         handle_resp(resp)
-        print(f"remaining: {len(msg_queue)}")
     else:
-        print(f"unhandled msg")
+        logging.warning(f"unhandled msg")
 
 
 def run_edge(garage_name: str):
@@ -88,4 +99,5 @@ def run_edge(garage_name: str):
         while True:
             loop(socket=socket, msg_queue=msg_queue)
     except KeyboardInterrupt:
+        # we simulate crashing by stopping th process
         msg_queue.sync()

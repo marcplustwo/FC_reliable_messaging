@@ -1,9 +1,9 @@
-from curses import raw
 from enum import Enum
 from typing import Dict
 from ulid import ULID
-import json
 
+import json
+import logging
 
 class MessageType(str, Enum):
     REQ = "req"
@@ -23,9 +23,10 @@ class Message:
             return Message(payload=raw_msg["payload"],
                            type=MessageType(raw_msg["type"]),
                            _id=raw_msg["id"],
+                           payload_type=raw_msg["payload_type"],
                            sender=raw_msg["sender"])
         except:
-            print("failed to serialize msg")
+            logging.error("failed to serialize msg")
 
     def __init__(self, type: MessageType, sender: str, payload: Dict = None, payload_type: PayloadType = None, _id: str = None):
         self.last_tried = None
@@ -41,9 +42,9 @@ class Message:
         return json.dumps({
             "id": self.id,
             "type": self.type,
-            "payload": self.payload,
             "payload_type": self.payload_type,
-            "sender": self.sender
+            "sender": self.sender,
+            "payload": self.payload,
         }).encode("ascii")
 
     def __str__(self):
