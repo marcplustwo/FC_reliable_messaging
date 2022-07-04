@@ -2,7 +2,7 @@ import zmq
 import shelve
 import logging
 
-from os import path
+from os import path, mkdir
 from random import random
 from datetime import datetime
 
@@ -16,6 +16,8 @@ def bill_customer(license_plate: str, duration_minutes: int, garage: str):
 
 # dictionary of parking garages
 # with latest information on occupancy
+if not path.exists("_tmp"):
+    mkdir("_tmp")
 occupancy = shelve.open(path.join("_tmp", "_server_occupancy"))
 msg_log = shelve.open(path.join("_tmp", "_server_msg_log"))
 
@@ -23,7 +25,7 @@ msg_log = shelve.open(path.join("_tmp", "_server_msg_log"))
 def handle_msg(msg: Message):
     # seen msg before? -> discard
     if msg.id in msg_log:
-        logging.info("dropping message - already processed")
+        logging.info(f"already processed, skipping msg {msg.id}")
         return None, None
 
     msg_log[msg.id] = datetime.now().timestamp()
@@ -56,7 +58,7 @@ def loop(socket):
     msg = Message.from_bytes(raw_msg)
 
     if random() < 0.1:
-        # simulate msg being dropped
+        # simulate req being dropped
         socket.send_string("")
         logging.info(f"simulate having dropped req {msg.id}")
         return

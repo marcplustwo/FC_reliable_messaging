@@ -13,6 +13,19 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
     next_req = datetime.now().timestamp()
     next_car = datetime.now().timestamp() + 4
     next_data = datetime.now().timestamp() + 4
+
+    # parking_garage = ParkingGarage(id = 1)
+    # parking_garage.start_simulation()
+
+    def event_callback(license_plate: str, duration_minutes: int):
+        req = Message(payload={'license_plate': license_plate, 'duration_minutes': duration_minutes},
+                        payload_type=PayloadType.CAR_BILLING,
+                        type=MessageType.REQ,
+                        sender=garage_name)
+        msg_queue.enqueue(req)
+
+    # parking_garage.on_car_leave = event_callback
+    
     while True:
         # at a regular interval REQUEST occupancy info from server
         # add to message queue: REQUEST msg (A1 Type 1)
@@ -30,6 +43,8 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
         if now > next_req:
             next_req = now + 3
 
+            # occupancy = parking_garage.get_occupancy()
+
             req = Message(
                 payload={garage_name: int(random() * 500)},
                 payload_type=PayloadType.OCCUPANCY,
@@ -40,14 +55,13 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
         if now > next_car:
             next_car = now + random() * 10
 
+
             req = Message(payload={'license_plate': 'abc', 'duration_minutes': 140},
                           payload_type=PayloadType.CAR_BILLING,
                           type=MessageType.REQ,
                           sender=garage_name)
             msg_queue.enqueue(req)
 
-    # parking_garage = ParkingGarage(id = 1)
-    # parking_garage.start()
 
 
 def handle_resp(resp: Message):
