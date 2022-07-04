@@ -8,27 +8,26 @@ from datetime import datetime
 
 from common.message import Message, MessageType, PayloadType
 
-# dictionary of parking garages
-# with latest information on occupancy
-
 
 def bill_customer(license_plate: str, duration_minutes: int, garage: str):
     print(
         f"Sending bill to '{license_plate}' for parking {duration_minutes} min in garage {garage}.")
 
 
+# dictionary of parking garages
+# with latest information on occupancy
 occupancy = shelve.open(path.join("_tmp", "_server_occupancy"))
 msg_log = shelve.open(path.join("_tmp", "_server_msg_log"))
 
 
 def handle_msg(msg: Message):
+    # seen msg before? -> discard
     if msg.id in msg_log:
         logging.info("dropping message - already processed")
         return None, None
 
     msg_log[msg.id] = datetime.now().timestamp()
 
-    # seen msg before?
     resp_payload = None
     resp_payload_type = None
 
