@@ -30,6 +30,8 @@
 
     simulate_parking_garage 的while true循环 和  我的sensor里面while 冲突？？！！
 
+    crash保证recent cars存到logging?
+
 5. garage 里面注释的问题。。
 
 总系统python 文件名无法运行？
