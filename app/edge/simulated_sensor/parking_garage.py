@@ -21,7 +21,7 @@ class ParkingGarage:
         self.max_capacity = self.cars_inside["max_capacity"]
 
     def start_simulation(self, eventcallback):
-        print("cars inside:", [car for car in self.cars_inside.keys()])
+        print("cars inside:", [car if car != "max_capacity" else "" for car in self.cars_inside.keys()])
 
         while True:
             # sleep for random time

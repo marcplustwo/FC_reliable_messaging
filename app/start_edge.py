@@ -5,7 +5,7 @@ from edge.edge import run_edge
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format="%(levelname)s - %(message)s", level=logging.INFO)
+    logging.basicConfig(format="%(levelname)s - %(message)s", level=logging.WARNING)
 
     parser = argparse.ArgumentParser(
         description='Simulate a parking garage edge node. Relies on server for data aggregation and processing.')

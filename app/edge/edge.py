@@ -36,11 +36,12 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
             next_occupancy_transmit_time = now + 5
 
             occupancy = parking_garage.get_occupancy()
+            max_occupancy = parking_garage.max_capacity
 
             print("sending occupancy")
 
             req = Message(
-                payload={garage_name: occupancy},
+                payload={garage_name: {"current_occupancy": occupancy, "max_capacity": max_occupancy}},
                 payload_type=PayloadType.OCCUPANCY,
                 type=MessageType.REQ,
                 sender=garage_name)
@@ -60,8 +61,13 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
 
 
 def handle_resp(resp: Message):
-    if resp.payload is not None:
-        print(f"{resp.payload}")
+    if resp.payload is None:
+        return
+    
+    if resp.payload_type == PayloadType.OCCUPANCY:
+        print(f"occupancy on all garages:")
+        for k, v in resp.payload.items():
+            print(f"\tgarage {k}: occupancy: {v['current_occupancy']}/{v['max_capacity']}")
 
 
 def loop(socket, msg_queue):
