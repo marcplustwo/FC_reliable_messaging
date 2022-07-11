@@ -2,69 +2,61 @@ import threading
 import zmq
 import logging
 
-from random import random
 from datetime import datetime
+from edge.simulated_sensor.parking_garage import ParkingGarage
 
 from edge.message_queue.message_queue import MessageQueue
 from common.message import Message, MessageType, PayloadType
 
 
 def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
-    next_req = datetime.now().timestamp()
-    next_car = datetime.now().timestamp() + 4
-    next_data = datetime.now().timestamp() + 4
+    parking_garage = ParkingGarage(garage_name=garage_name)
 
-    # parking_garage = ParkingGarage(id = 1)
-    # parking_garage.start_simulation()
-
-    def event_callback(license_plate: str, duration_minutes: int):
+    def on_car_leaving(license_plate: str, duration_minutes: int):
         req = Message(payload={'license_plate': license_plate, 'duration_minutes': duration_minutes},
-                        payload_type=PayloadType.CAR_BILLING,
-                        type=MessageType.REQ,
-                        sender=garage_name)
+                      payload_type=PayloadType.CAR_BILLING,
+                      type=MessageType.REQ,
+                      sender=garage_name)
         msg_queue.enqueue(req)
 
-    # parking_garage.on_car_leave = event_callback
-    
+    # use event based
+    simulation_thread = threading.Thread(
+        target=parking_garage.start_simulation, args=[on_car_leaving])
+
+    simulation_thread.start()
+
+    # polling
+    next_occupancy_transmit_time = datetime.now().timestamp() + 5
+    next_occupancy_request_time = datetime.now().timestamp() + 10
     while True:
-        # at a regular interval REQUEST occupancy info from server
-        # add to message queue: REQUEST msg (A1 Type 1)
+        # at a regular interval transmit occupancy info from server
         now = datetime.now().timestamp()
 
-        if now > next_data:
-            # B1 msg -> request all other garage occupancies
-            next_data = now + 10
+        if now > next_occupancy_transmit_time:
+            next_occupancy_transmit_time = now + 5
+
+            occupancy = parking_garage.get_occupancy()
+
+            print("sending occupancy")
 
             req = Message(
-                payload_type=PayloadType.OCCUPANCY_REQUEST,
-                type=MessageType.REQ,
-                sender=garage_name)
-            msg_queue.enqueue(req)
-
-        if now > next_req:
-            #A1 type1 msg -> send current occupancy of this garage
-            next_req = now + 3
-
-            # occupancy = parking_garage.get_occupancy()
-
-            req = Message(
-                payload={garage_name: int(random() * 500)},
+                payload={garage_name: occupancy},
                 payload_type=PayloadType.OCCUPANCY,
                 type=MessageType.REQ,
                 sender=garage_name)
             msg_queue.enqueue(req)
 
-        if now > next_car:
-            #A2 type2 msg -> car leave, to get  the bill
-            next_car = now + random() * 10
+        if now > next_occupancy_request_time:
+            next_occupancy_request_time = now + 10
 
+            print("requesting occupancy")
 
-            req = Message(payload={'license_plate': 'abc', 'duration_minutes': 140},
-                          payload_type=PayloadType.CAR_BILLING,
-                          type=MessageType.REQ,
-                          sender=garage_name)
+            req = Message(
+                # payload={garage_name: occupancy},
+                payload_type=PayloadType.OCCUPANCY_REQUEST,
+                type=MessageType.REQ,
+                sender=garage_name)
             msg_queue.enqueue(req)
-
 
 
 def handle_resp(resp: Message):
