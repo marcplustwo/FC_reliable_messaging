@@ -93,7 +93,7 @@ def loop(socket, msg_queue):
         logging.warning(f"unhandled msg")
 
 
-def run_edge(garage_name: str):
+def run_edge(garage_name: str, server_ip: str, server_port: str):
     msg_queue = MessageQueue(garage_name=garage_name)
 
     # every 30 seconds:
@@ -107,7 +107,9 @@ def run_edge(garage_name: str):
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.setsockopt(zmq.REQ_RELAXED, 1)
-    socket.connect("tcp://localhost:5555")
+    socket.connect(f"tcp://{server_ip}:{server_port}")
+
+    logging.info(f"Connecting to server at 'tcp://{server_ip}:{server_port}'")
 
     try:
         while True:

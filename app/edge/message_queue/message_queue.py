@@ -20,7 +20,7 @@ class MessageQueue:
     def enqueue(self, msg: Message):
         self.queue[msg.id] = {"ts": ts(),
                               "msg": msg}
-        logging.info(f"remaining msgs in queue: {len(self.queue)}")
+        logging.info(f"msgs in queue: {len(self.queue)}")
 
     def dequeue(self, id: str):
         return self.queue.pop(id)
