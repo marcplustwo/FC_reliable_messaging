@@ -81,12 +81,14 @@ def loop(socket):
     socket.send(resp.construct_msg(), zmq.NOBLOCK)
 
 
-def run_server():
+def run_server(server_port:str):
     # init message receiver
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     # socket.setsockopt(zmq.REQ_RELAXED, 1)
-    socket.bind("tcp://*:5555")
+    socket.bind(f"tcp://*:{server_port}")
+
+    logging.info(f"Listening on port {server_port}")
 
     try:
         while True:
