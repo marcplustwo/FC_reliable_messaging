@@ -35,7 +35,7 @@ class ParkingGarage:
                     if license_plate in self.cars_inside:
                         continue
                     self.cars_inside[license_plate] = 0
-                    print(f"car {license_plate} entered")
+                    print(f"SENSOR 1: car {license_plate} entered")
 
 
             if random.random() <= len(self.cars_inside) / self.max_capacity:
@@ -45,7 +45,7 @@ class ParkingGarage:
                         list((self.cars_inside.keys())))
                     leaving_car_duration = self.cars_inside.pop(leaving_car_key)
 
-                    print(f"car {leaving_car_key} left after {leaving_car_duration} mins")
+                    print(f"SENSOR 2: car {leaving_car_key} left after {leaving_car_duration} mins")
                     eventcallback(leaving_car_key, leaving_car_duration)
 
             for car_key in self.cars_inside:

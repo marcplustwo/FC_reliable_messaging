@@ -16,6 +16,13 @@ if __name__ == '__main__':
     parser.add_argument('--server_port', type=str,
                         help='server ip', required=False, default="5555")
 
+    parser.add_argument('-v', help='verbose output', required=False, action='store_true')
+
     args = parser.parse_args()
+
+    if args.v:
+        logging.basicConfig(format="%(levelname)s - %(message)s", level=logging.INFO)
+    else:
+        logging.basicConfig(format="%(levelname)s - %(message)s", level=logging.CRITICAL)
 
     run_edge(garage_name=args.garage_name, server_ip=args.server_ip, server_port=args.server_port)
