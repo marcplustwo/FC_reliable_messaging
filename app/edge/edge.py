@@ -32,6 +32,7 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
         now = datetime.now().timestamp()
 
         if now > next_data:
+            # B1 msg -> request all other garage occupancies
             next_data = now + 10
 
             req = Message(
@@ -41,6 +42,7 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
             msg_queue.enqueue(req)
 
         if now > next_req:
+            #A1 type1 msg -> send current occupancy of this garage
             next_req = now + 3
 
             # occupancy = parking_garage.get_occupancy()
@@ -53,6 +55,7 @@ def simulate_parking_garage(msg_queue: MessageQueue, garage_name: str):
             msg_queue.enqueue(req)
 
         if now > next_car:
+            #A2 type2 msg -> car leave, to get  the bill
             next_car = now + random() * 10
 
 
