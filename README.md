@@ -1,75 +1,56 @@
-# Reliable Messaging for Fog Use Cases
+# Reliable Messaging for Fog Use Cases Prototype
 
-## (Constructed) Use Case
+## Set Up and Run
+
+### Prerequisites
+Python [Poetry](https://python-poetry.org/docs/) is used to manage dependencies.
+
+### Set Up
+`$ poetry install` installs all dependencies.
+
+`$ poetry shell` activates the virtual environment.
+
+### Run
+The server can be started using `$ python app/start_server.py`.
+(Make sure TCP on port 5555 is enabled.)
+
+The edge nodes can be started using `$ python app/start_edge.py --garage_name 1`
+
+## Use Case: Parking Garages (simulated)
+We simulate a network of parking garages across a city that use a central server to a) aggregate occupancy data and b) handle billing.
+There is an assumption that all cars using the parking garages are registered with their license plates.
+Occupancy for all parking garages can be requested from the server and displayed at each parking garage.
+
+Below there is a schematic overview of the system's architecture.
+
+![Schmatic of Architecture](reliable_messaging_prototype:_parking_garage.png)
 
 ## Reliable Messaging
-We operate on a client-server model. There can be multiple clients that we calle edge nodes. They sent data to a server (in the cloud). Data is processed and aggregated. At regular intervals clients receive this aggregated data back.
+We operate on a client-server model. There can be multiple clients (a parking garage) that we calle edge nodes. They send data to a server (in the cloud). Data is processed and aggregated.
+At regular intervals clients request updates on the aggregated data. 
 
 Clients can fail or become unresponsive. The network does not guarantee order, timely delivery, or delivery at all.
 
-We implement a reliable delivery mechanism.
+We implement a reliable delivery mechanism based on the client-side [Lazy Pirate Pattern](https://zguide.zeromq.org/docs/chapter4/#Client-Side-Reliability-Lazy-Pirate-Pattern).
+This means the client is responsible for delivery. It awaits an acknowledgement for every message sent.
+
+If no ack is received the client may try to resend the message. Only an acknowledgement removes the message from the message queue.
+
+This way, different types of messages can be sent via the same mechanism.
+Generally, it is based on ZMQ's REQUEST-REPLY pattern, meaning every message exchange is to be initiated by the client. Clients can request data, the payload can be piggybacked on the acknowledgement.
 
 ### Algorithm
-- put data in queue (at regular intervals)
-  - mark as "NEW"
-- send data that is not acknowledged
-  - every x interval we take the messages (oldest first) from the queue and send it
-  - mark as "AWAITING_ACK"
+- client (edge node)
+  - enqueue message (in background threads)
+  - retrieve next message from queue (oldest first)
+    - however, wait min. 2 seconds to resend a message
+  - await ack
+  - handle ack
+    - dequeue message
+    - process data (if applicable)
 
 - server
-  - receive
+  - receive message
+  - handle message
   - send ACK
-
-- client
-  - wait for ACK messages
-  - delete ACK's messages from queue
-
-
-(draw this type of diagram)
-https://taotetek.wordpress.com/2011/02/02/python-multiprocessing-with-zeromq/
-
-### MSG Types
-READING
-ACK
-REQ
-
-# responsibilities / use case
-## edge
-- count incoming / outgoing cars
-- send to cloud
-  - current occupancy/availability
-  - when car left: send parking length to cloud (for billing)
-
-## cloud
-- billing (send the bill to the customer) (it wouldn't actually do anything in our implementation)
-  - we assume/pretend every car has an account with billing information linked
-- occupancy report (how many parking spots available throughout the city)
-
-
-# TODO
-- multiple edge instances
-  - we give parking lot id (new port)
-- adapt for use case
-  - simulate car sensor (at parking lot entrance)
-    - random: come up with algorithm that meaningfully changes occupancy -> over time there is a trend of more cars going in (so that the price would actually change)
-    - a bit later the trend would be for more cars to leave again
-  - direction in/out (ou including length of stay [for billing]) + license plate + id of parking lot
-  - remember cars that came in, so we can simulate them leaving again
-- Implement Message abstraction for server as well
-  - define Message types
-    - client -> server
-      - A1 DATA
-      - B1 DATA_REQUEST (here: OCCUPANCY request) (every 30 seconds)
-    - server -> client
-      - A2 ACK
-      - B2 ACK (with data)
-  - define msg content types
-    - A1
-      - TYPE 1
-        - current occupancy of this parking garage
-      - TYPE 2
-        - car just left (for billing purposes)
-    - B1
-      - request availability for all parking garages (nearby)
-    - B2
-      - availability in each parking garage
+    - include requested data (if applicable)
