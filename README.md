@@ -23,8 +23,6 @@ Occupancy for all parking garages can be requested from the server and displayed
 
 Below there is a schematic overview of the system's architecture.
 
-![Schmatic of Architecture](reliable_messaging_prototype:_parking_garage.png)
-
 ## Reliable Messaging
 We operate on a client-server model. There can be multiple clients (a parking garage) that we calle edge nodes. They send data to a server (in the cloud). Data is processed and aggregated.
 At regular intervals clients request updates on the aggregated data. 
